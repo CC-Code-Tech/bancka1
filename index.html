@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProgBank — Личный Кабинет</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #eab308;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Формы и кнопки */
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            background: #0f172a;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Банковский интерфейс */
+        .balance-card {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-card::after {
+            content: "BANK";
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 60px;
+            font-weight: 900;
+            opacity: 0.1;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            color: #bfdbfe;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .balance-amount {
+            font-size: 32px;
+            font-weight: bold;
+            margin-top: 5px;
+            color: #ffffff;
+        }
+
+        .coin-icon {
+            color: var(--gold);
+        }
+
+        .user-info {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+        }
+
+        .user-info span {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .role-admin { background: #ef4444; color: white; }
+        .role-user { background: #10b981; color: white; }
+
+        /* Админ-панель */
+        .admin-panel {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed #334155;
+            text-align: left;
+        }
+
+        .admin-panel h3 {
+            color: #f87171;
+            margin-bottom: 15px;
+
+font-size: 18px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            background: #0f172a;
+            color: white;
+            border: 2px solid #334155;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        .logout-btn {
+            background: #475569;
+            margin-top: 15px;
+        }
+        .logout-btn:hover {
+            background: #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Окно входа -->
+        <div id="auth-screen">
+            <h2>Добро пожаловать в ProgBank</h2>
+            <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;">
+                Введите ваш никнейм для входа или регистрации
+            </p>
+            <input type="text" id="username-input" placeholder="Ваш никнейм..." autocomplete="off">
+            <button onclick="login()">Войти</button>
+        </div>
+
+        <!-- Экран банка (Личный кабинет) -->
+        <div id="bank-screen" class="hidden">
+            <div class="user-info">
+                Привет, <span id="user-display-name">Игрок</span>!
+                <br>
+                <span id="role-container"></span>
+            </div>
+
+            <div class="balance-card">
+                <div class="balance-label">Текущий баланс</div>
+                <div class="balance-amount"><span id="balance-value">0</span> <span class="coin-icon">🪙 </span></div>
+            </div>
+
+            <!-- Панель Администратора (скрыта по умолчанию) -->
+            <div id="admin-area" class="admin-panel hidden">
+                <h3>👑  Панель Администратора</h3>
+                
+                <label for="user-select" style="font-size: 14px; color: var(--text-muted);">Выберите игрока:</label>
+                <select id="user-select"></select>
+
+                <input type="number" id="coin-amount" placeholder="Количество монет (например, 100 или -50)">
+                <button onclick="modifyBalance()" style="background: #ef4444;">Выдать / Забрать</button>
+            </div>
+
+            <button class="logout-btn" onclick="logout()">Выйти из аккаунта</button>
+        </div>
+    </div>
+
+    <script>
+        // Инициализация базы данных в localStorage
+        // Структура: { "username": { balance: 100, isAdmin: true/false } }
+        let db = JSON.parse(localStorage.getItem('bank_users')) || {};
+        let currentUser = null;
+
+        // Функция входа / регистрации
+        function login() {
+            const usernameInput = document.getElementById('username-input').value.trim();
+            
+            if (!usernameInput) {
+                alert('Пожалуйста, введите никнейм!');
+                return;
+            }
+
+            const username = usernameInput.toLowerCase();
+
+            // Если база пустая, то самый первый созданный юзер становится админом
+            const isFirstUser = Object.keys(db).length === 0;
+
+            if (!db[username]) {
+                // Регистрация нового пользователя
+                db[username] = {
+                    name: usernameInput, // Сохраняем оригинальный регистр букв
+                    balance: 0,
+                    isAdmin: isFirstUser
+                };
+                saveDB();
+            }
+
+            currentUser = username;
+            showBankScreen();
+        }
+
+        // Обновление экрана банка данными
+        function showBankScreen() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('bank-screen').classList.remove('hidden');
+
+            const userData = db[currentUser];
+            document.getElementById('user-display-name').innerText = userData.name;
+            document.getElementById('balance-value').innerText = userData.balance;
+
+            const roleContainer = document.getElementById('role-container');
+            const adminArea = document.getElementById('admin-area');
+
+            if (userData.isAdmin) {
+
+roleContainer.innerHTML = '<span class="role-badge role-admin">Администратор</span>';
+                adminArea.classList.remove('hidden');
+                updateUsersDropdown();
+            } else {
+                roleContainer.innerHTML = '<span class="role-badge role-user">Пользователь</span>';
+                adminArea.classList.add('hidden');
+            }
+        }
+
+        // Обновление списка пользователей в выпадающем меню админа
+        function updateUsersDropdown() {
+            const select = document.getElementById('user-select');
+            select.innerHTML = ''; // Очищаем список
+
+            for (let key in db) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.innerText = `${db[key].name} (Баланс: ${db[key].balance})`;
+                select.appendChild(option);
+            }
+        }
+
+        // Функция выдачи/снятия монет (доступна только админу)
+        function modifyBalance() {
+            if (!db[currentUser].isAdmin) {
+                alert('У вас нет прав администратора!');
+                return;
+            }
+
+            const targetUser = document.getElementById('user-select').value;
+            const amount = parseInt(document.getElementById('coin-amount').value);
+
+            if (isNaN(amount)) {
+                alert('Введите корректное число монет!');
+                return;
+            }
+
+            // Изменяем баланс (можно вводить и отрицательные числа, чтобы забирать)
+            db[targetUser].balance += amount;
+            
+            // Защита от ухода баланса в минус (по желанию, можно убрать)
+            if (db[targetUser].balance < 0) {
+                db[targetUser].balance = 0;
+            }
+
+            saveDB();
+            
+            // Перерисовываем интерфейс
+            showBankScreen();
+            document.getElementById('coin-amount').value = ''; // очистить поле ввода
+            alert(`Успешно изменено! Новый баланс пользователя ${db[targetUser].name}: ${db[targetUser].balance}`);
+        }
+
+        // Выход из аккаунта
+        function logout() {
+            currentUser = null;
+            document.getElementById('username-input').value = '';
+            document.getElementById('bank-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+        }
+
+        // Сохранение базы данных в локальное хранилище браузера
+        function saveDB() {
+            localStorage.setItem('bank_users', JSON.stringify(db));
+        }
+    </script>
+</body>
+</html>
+
