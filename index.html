@@ -51,7 +51,6 @@
             display: none !important;
         }
 
-        /* Формы и кнопки */
         input {
             width: 100%;
             padding: 12px;
@@ -87,7 +86,6 @@
             background: var(--accent-hover);
         }
 
-        /* Банковский интерфейс */
         .balance-card {
             background: linear-gradient(135deg, #1e3a8a, #3b82f6);
             padding: 20px;
@@ -149,7 +147,6 @@
         .role-admin { background: #ef4444; color: white; }
         .role-user { background: #10b981; color: white; }
 
-        /* Админ-панель */
         .admin-panel {
             margin-top: 25px;
             padding-top: 20px;
@@ -160,14 +157,14 @@
         .admin-panel h3 {
             color: #f87171;
             margin-bottom: 15px;
-
-font-size: 18px;
+            font-size: 18px;
         }
 
         select {
             width: 100%;
             padding: 12px;
-            background: #0f172a;
+
+background: #0f172a;
             color: white;
             border: 2px solid #334155;
             border-radius: 8px;
@@ -191,13 +188,13 @@ font-size: 18px;
         <div id="auth-screen">
             <h2>Добро пожаловать в ProgBank</h2>
             <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 14px;">
-                Введите ваш никнейм для входа или регистрации
+                Введите ваш никнейм для входа
             </p>
             <input type="text" id="username-input" placeholder="Ваш никнейм..." autocomplete="off">
             <button onclick="login()">Войти</button>
         </div>
 
-        <!-- Экран банка (Личный кабинет) -->
+        <!-- Экран банка -->
         <div id="bank-screen" class="hidden">
             <div class="user-info">
                 Привет, <span id="user-display-name">Игрок</span>!
@@ -210,14 +207,14 @@ font-size: 18px;
                 <div class="balance-amount"><span id="balance-value">0</span> <span class="coin-icon">🪙 </span></div>
             </div>
 
-            <!-- Панель Администратора (скрыта по умолчанию) -->
+            <!-- Панель Администратора -->
             <div id="admin-area" class="admin-panel hidden">
                 <h3>👑  Панель Администратора</h3>
                 
                 <label for="user-select" style="font-size: 14px; color: var(--text-muted);">Выберите игрока:</label>
                 <select id="user-select"></select>
 
-                <input type="number" id="coin-amount" placeholder="Количество монет (например, 100 или -50)">
+                <input type="number" id="coin-amount" placeholder="Количество монет">
                 <button onclick="modifyBalance()" style="background: #ef4444;">Выдать / Забрать</button>
             </div>
 
@@ -226,12 +223,25 @@ font-size: 18px;
     </div>
 
     <script>
-        // Инициализация базы данных в localStorage
-        // Структура: { "username": { balance: 100, isAdmin: true/false } }
-        let db = JSON.parse(localStorage.getItem('bank_users')) || {};
-        let currentUser = null;
+        // Имя главного админа
+        const ADMIN_NICKNAME = "chelikxax67";
 
-        // Функция входа / регистрации
+        // Загрузка базы данных и текущей сессии
+        let db = JSON.parse(localStorage.getItem('bank_users')) || {};
+        let currentUser = localStorage.getItem('bank_current_user') || null;
+
+        // Проверяем при загрузке страницы: если юзер уже был залогинен, сразу пускаем его
+        window.onload = function() {
+            if (currentUser && db[currentUser]) {
+                showBankScreen();
+            } else {
+                // На случай, если в сессии остался ник, которого нет в локальной БД устройства
+                currentUser = null;
+                localStorage.removeItem('bank_current_user');
+            }
+        };
+
+        // Функция входа
         function login() {
             const usernameInput = document.getElementById('username-input').value.trim();
             
@@ -242,38 +252,38 @@ font-size: 18px;
 
             const username = usernameInput.toLowerCase();
 
-            // Если база пустая, то самый первый созданный юзер становится админом
-            const isFirstUser = Object.keys(db).length === 0;
-
+            // Если пользователя нет в локальной базе устройства — создаем его
             if (!db[username]) {
-                // Регистрация нового пользователя
                 db[username] = {
-                    name: usernameInput, // Сохраняем оригинальный регистр букв
-                    balance: 0,
-                    isAdmin: isFirstUser
+                    name: usernameInput,
+                    balance: 0
                 };
                 saveDB();
             }
 
+            // Сохраняем сессию, чтобы не вылетало при обновлении
             currentUser = username;
+            localStorage.setItem('bank_current_user', currentUser);
+            
             showBankScreen();
         }
 
-        // Обновление экрана банка данными
+        // Показ главного экрана банка
         function showBankScreen() {
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('bank-screen').classList.remove('hidden');
 
             const userData = db[currentUser];
             document.getElementById('user-display-name').innerText = userData.name;
-            document.getElementById('balance-value').innerText = userData.balance;
+
+document.getElementById('balance-value').innerText = userData.balance;
 
             const roleContainer = document.getElementById('role-container');
             const adminArea = document.getElementById('admin-area');
 
-            if (userData.isAdmin) {
-
-roleContainer.innerHTML = '<span class="role-badge role-admin">Администратор</span>';
+            // Проверка на админа строго по никнейму
+            if (currentUser === ADMIN_NICKNAME) {
+                roleContainer.innerHTML = '<span class="role-badge role-admin">Администратор</span>';
                 adminArea.classList.remove('hidden');
                 updateUsersDropdown();
             } else {
@@ -282,10 +292,10 @@ roleContainer.innerHTML = '<span class="role-badge role-admin">Админист�
             }
         }
 
-        // Обновление списка пользователей в выпадающем меню админа
+        // Выпадающий список пользователей для админа
         function updateUsersDropdown() {
             const select = document.getElementById('user-select');
-            select.innerHTML = ''; // Очищаем список
+            select.innerHTML = '';
 
             for (let key in db) {
                 const option = document.createElement('option');
@@ -295,9 +305,9 @@ roleContainer.innerHTML = '<span class="role-badge role-admin">Админист�
             }
         }
 
-        // Функция выдачи/снятия монет (доступна только админу)
+        // Изменение баланса админом
         function modifyBalance() {
-            if (!db[currentUser].isAdmin) {
+            if (currentUser !== ADMIN_NICKNAME) {
                 alert('У вас нет прав администратора!');
                 return;
             }
@@ -306,35 +316,31 @@ roleContainer.innerHTML = '<span class="role-badge role-admin">Админист�
             const amount = parseInt(document.getElementById('coin-amount').value);
 
             if (isNaN(amount)) {
-                alert('Введите корректное число монет!');
+                alert('Введите число монет!');
                 return;
             }
 
-            // Изменяем баланс (можно вводить и отрицательные числа, чтобы забирать)
             db[targetUser].balance += amount;
             
-            // Защита от ухода баланса в минус (по желанию, можно убрать)
             if (db[targetUser].balance < 0) {
                 db[targetUser].balance = 0;
             }
 
             saveDB();
-            
-            // Перерисовываем интерфейс
             showBankScreen();
-            document.getElementById('coin-amount').value = ''; // очистить поле ввода
-            alert(`Успешно изменено! Новый баланс пользователя ${db[targetUser].name}: ${db[targetUser].balance}`);
+            document.getElementById('coin-amount').value = '';
+            alert(`Готово! Новый баланс ${db[targetUser].name}: ${db[targetUser].balance}`);
         }
 
-        // Выход из аккаунта
+        // Выход
         function logout() {
             currentUser = null;
+            localStorage.removeItem('bank_current_user');
             document.getElementById('username-input').value = '';
             document.getElementById('bank-screen').classList.add('hidden');
             document.getElementById('auth-screen').classList.remove('hidden');
         }
 
-        // Сохранение базы данных в локальное хранилище браузера
         function saveDB() {
             localStorage.setItem('bank_users', JSON.stringify(db));
         }
